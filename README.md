@@ -22,4 +22,5 @@ pip install bs4<br>
 pip install pprint<br>
 pip install request<br>
 
+et ne pas oublier de mettre le bon TOKEN ;-)
 
