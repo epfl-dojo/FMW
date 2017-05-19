@@ -16,5 +16,10 @@ FBI Most Wanted
     :         K I L R O Y   S A Y S   H I !          :
     :................................................:
 ```
-sudo apt-get install python-pip
-pip install telegram
+sudo apt-get install python3-pip<br>
+pip install python-telegram-bot<br>
+pip install bs4<br>
+pip install pprint<br>
+pip install request<br>
+
+
