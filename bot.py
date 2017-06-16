@@ -16,7 +16,7 @@ Press Ctrl-C on the command line or send a signal to the process to stop the
 bot.
 """
 from telegram import *
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, InlineQueryHandler, CallbackQueryHandler
 import logging, fmw, pprint
 
 
@@ -63,22 +63,38 @@ def sanitizeCriminalName(criminalName):
 
 def crimList(bot, update):
     criminals = fmw.getCriminalsList()
-    # Parameters:
-    #
-    # text (str) – Label text on the button.
-    # url (Optional[str]) – HTTP url to be opened when button is pressed.
-    # callback_data (Optional[str]) – Data to be sent in a callback query to the bot when button is pressed, 1-64 bytes.
-    # switch_inline_query (Optional[str]) – If set, pressing the button will prompt the user to select one of their chats, open that chat and insert the bot’s username and the specified inline query in the input field. Can be empty, in which case just the bot’s username will be inserted.
-    # switch_inline_query_current_chat (Optional[str]) – If set, pressing the button will insert the bot’s username and the specified inline query in the current chat’s input field. Can be empty, in which case only the bot’s username will be inserted.
-    # callback_game (Optional[telegram.CallbackGame]) – Description of the game that will be launched when the user presses the button.
-    # **kwargs (dict) – Arbitrary keyword arguments.
-
     button_list = [
-        InlineKeyboardButton("%s" % criminal, switch_inline_query_current_chat='/getData ' + sanitizeCriminalName(criminal)) for criminal in criminals
+        #Inline Keyboard doc here:
+        #https://python-telegram-bot.readthedocs.io/en/latest/telegram.inlinekeyboardbutton.html?highlight=inlinekey#module-telegram.inlinekeyboardbutton
+        #InlineKeyboardButton("%s" % criminal, switch_inline_query_current_chat='/getData ' + sanitizeCriminalName(criminal)) for criminal in criminals
+        #InlineKeyboardButton("%s" % criminal, switch_inline_query_current_chat='/getData ' + sanitizeCriminalName(criminal), callback_data) for criminal in criminals
+        InlineKeyboardButton("%s" % criminal, callback_data="%s" % criminal) for criminal in criminals
     ]
+
+    #bot.editMessageCaption()
+
+
+
     reply_markup = InlineKeyboardMarkup(build_menu(button_list, n_cols=1))
     update.message.reply_text('Please choose a criminal:', reply_markup=reply_markup)
 
+
+def inline_query(bot, update):
+    inline_results = [
+        InlineQueryResultArticle(
+            id=1,
+            title='show keyboard to crash the bot',
+            input_message_content=InputTextMessageContent(
+                'If you press the button below, you will crash the bot'),
+            reply_markup=InlineKeyboardMarkup([[
+                InlineKeyboardButton('Click', callback_data='data')
+            ]])) ]
+    update.inline_query.answer(inline_results)
+
+def button_pressed(bot, update):
+    print(update.callback_query.data)
+    getCriminalData(bot, sanitizeCriminalName(update.callback_query.data))
+    update.callback_query.answer()
 
 def getCriminalData(bot, update):
     splitedText = update.message.text.split()
@@ -92,17 +108,20 @@ def error(bot, update, error):
 
 def main():
     # Create the EventHandler and pass it your bot's token.
-    updater = Updater("TOKEN")
+    updater = Updater("337683308:AAFHNkl3-gfPyxSo2g3HRJ8uBbELKQ9lj_I")
 
     # Get the dispatcher to register handlers
     dp = updater.dispatcher
-    #print(Filters.text)
+    print(Filters.text)
     # on different commands - answer in Telegram
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", help))
     dp.add_handler(CommandHandler("crimList", crimList))
     dp.add_handler(CommandHandler("crim", crimList))
     dp.add_handler(CommandHandler("getData", getCriminalData))
+    dp.add_handler(InlineQueryHandler(inline_query))
+    dp.add_handler(CallbackQueryHandler(button_pressed))
+
 
     #telegram.ext.commandhandler.CommandHandler("getData", callback, allow_edited=False, pass_args=False, pass_update_queue=False, pass_job_queue=False)
 
@@ -110,7 +129,7 @@ def main():
 
 
     # on noncommand i.e message - echo the message on Telegram
-    #dp.add_handler(MessageHandler(Filters.text, echo))
+    dp.add_handler(MessageHandler(Filters.text, echo))
 
     # log all errors
     dp.add_error_handler(error)
